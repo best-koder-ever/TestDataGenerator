@@ -27,24 +27,33 @@ jobs:
         echo ""
         echo "=== Shared folder ==="
         ls -la Shared/ 2>/dev/null || echo "No Shared folder"
+        echo ""
+        echo "=== Source files ==="
+        ls -la *.cs
 
+    - name: 📝 Prepare CI build
+      run: |
+        # Backup original Program.cs and use hybrid version for CI
+        cp Program.cs Program.Local.cs
+        cp Program.Hybrid.cs Program.cs
+        
     - name: 🧹 Clean workspace
       run: |
         rm -rf obj bin
-        dotnet clean TestDataGenerator.Hybrid.csproj 2>/dev/null || true
+        dotnet clean 2>/dev/null || true
 
     - name: 📦 Restore dependencies (CI build)
-      run: dotnet restore TestDataGenerator.Hybrid.csproj
+      run: dotnet restore
       env:
         CI_BUILD: true
 
     - name: 🏗️ Build (CI mode)
-      run: dotnet build TestDataGenerator.Hybrid.csproj --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore
       env:
         CI_BUILD: true
 
     - name: 🧪 Run CI test
-      run: dotnet run --project TestDataGenerator.Hybrid.csproj --configuration Release --no-build
+      run: dotnet run --configuration Release --no-build
       env:
         CI_BUILD: true
 
