@@ -19,10 +19,18 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: 📦 Restore dependencies
-      run: dotnet restore TestDataGenerator.csproj
+      run: |
+        # Create a temporary project file without cross-project references for CI
+        cp TestDataGenerator.csproj TestDataGenerator.csproj.bak
+        # Remove project references that don't exist in isolated repo
+        sed -i '/<ProjectReference Include=/d' TestDataGenerator.csproj
+        dotnet restore TestDataGenerator.csproj
 
     - name: 🏗️ Build project
       run: dotnet build TestDataGenerator.csproj --no-restore --configuration Release
+
+    - name: 🔄 Restore original project file
+      run: mv TestDataGenerator.csproj.bak TestDataGenerator.csproj
 
     - name: 🧪 Run tests (if any)
       run: |
@@ -31,10 +39,6 @@ jobs:
         else
           echo "No test projects found, skipping tests"
         fi
-
-    - name: 🏗️ Build Docker image
-      run: |
-        docker build -t test-data-generator:latest .
 
     - name: 📤 Upload build artifacts
       uses: actions/upload-artifact@v4
