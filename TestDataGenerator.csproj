@@ -5,7 +5,7 @@
     <ProjectReference Include="..\matchmaking-service\MatchmakingService.csproj" />
     <ProjectReference Include="..\dejting-yarp\src\dejting-yarp\dejting-yarp.csproj" />
     <ProjectReference Include="..\swipe-service\src\SwipeService\SwipeService.csproj" />
-    <ProjectReference Include="..\user-service\src\UserService\UserService.csproj" />
+    <ProjectReference Include="..\user-service\UserService.csproj" />
   </ItemGroup>
 
   <ItemGroup>
