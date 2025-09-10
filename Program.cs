@@ -12,9 +12,15 @@ using System.Net.Http.Json; // Added for PostAsJsonAsync
 using AuthService.DTOs; // Assuming RegisterDto is in this namespace
 using UserService.Data; // For ApplicationDbContext
 using UserService.Models; // For UserProfile
+using System.Text.Json; // Added for configuration parsing
+using TestDataGenerator.Profiles; // Added for demo profiles
 
 class Program
 {
+    // Environment configuration
+    private static EnvironmentConfig? _config;
+    private static string _environment = "local"; // Default environment
+    
     private static readonly Dictionary<string, string> DbOptions = new()
     {
         { "1", "Server=127.0.0.1;Port=3307;Database=AuthServiceDb;User=authuser;Password=authuser_password;" },
@@ -27,7 +33,7 @@ class Program
 
     private static CreationMode _userCreationMode = CreationMode.DirectInsert; // Default
     private static string AuthApiServiceUrl = Environment.GetEnvironmentVariable("AUTH_API_URL") ?? "http://localhost:8081"; // Configurable: AuthService URL
-    private static string UserServiceApiUrl = "http://localhost:8082"; // Default user-service URL
+    private static string UserServiceApiUrl = "http://localhost:8082"; // Default UserService URL
 
     private enum CreationMode
     {
@@ -37,6 +43,12 @@ class Program
 
     static async Task Main(string[] args) // Changed to async Task
     {
+        Console.WriteLine("🎯 TestDataGenerator - Enhanced with Environment Support");
+        Console.WriteLine("======================================================");
+        
+        // Load environment configuration
+        await LoadEnvironmentConfig(args);
+        
         // --- Batch mode for automation ---
         if (args.Length > 0)
         {
@@ -44,10 +56,23 @@ class Program
             var explicitUsers = new List<RegisterDto>();
             bool useApi = false;
             bool useDirect = false;
+            bool runScenarios = false;
+            
             for (int i = 0; i < args.Length; i++)
             {
                 switch (args[i])
                 {
+                    case "--environment":
+                        if (i + 1 < args.Length)
+                        {
+                            _environment = args[i + 1];
+                            await LoadEnvironmentConfig(args);
+                            i++;
+                        }
+                        break;
+                    case "--run-scenarios":
+                        runScenarios = true;
+                        break;
                     case "--create-users":
                         if (i + 1 < args.Length && int.TryParse(args[i + 1], out int n))
                         {
@@ -79,7 +104,7 @@ class Program
                             i++;
                         }
                         break;
-                    case "--user-service-url":
+                    case "--UserService-url":
                         if (i + 1 < args.Length)
                         {
                             UserServiceApiUrl = args[i + 1];
@@ -118,16 +143,52 @@ class Program
             // Then create random users if requested
             if (userCount > 0)
             {
-                if (_userCreationMode == CreationMode.ApiCall)
+                // Use demo profile users in demo environment
+                if (_environment == "demo" && _config?.DataProfile?.UserCount > 0)
                 {
-                    await CreateUsersViaApiAsync(userCount, seedUserService: true);
+                    Console.WriteLine("🎭 Creating demo profile users...");
+                    var sharedDemoUsers = DemoProfile.GetDemoUsers().Take(userCount).ToList();
+                    
+                    // Convert to AuthService.DTOs.RegisterDto
+                    var demoUsers = sharedDemoUsers.Select(u => new AuthService.DTOs.RegisterDto
+                    {
+                        Username = u.Username,
+                        Email = u.Email,
+                        Password = u.Password,
+                        ConfirmPassword = u.ConfirmPassword,
+                        PhoneNumber = u.PhoneNumber,
+                        ProfilePicture = u.ProfilePicture
+                    }).ToList();
+                    
+                    if (_userCreationMode == CreationMode.ApiCall)
+                    {
+                        await CreateExplicitUsersViaApiAsync(demoUsers, seedUserService: true);
+                    }
+                    else
+                    {
+                        CreateExplicitUsersDirectly(demoUsers);
+                    }
                 }
                 else
                 {
-                    CreateUsersDirectly(userCount);
+                    if (_userCreationMode == CreationMode.ApiCall)
+                    {
+                        await CreateUsersViaApiAsync(userCount, seedUserService: true);
+                    }
+                    else
+                    {
+                        CreateUsersDirectly(userCount);
+                    }
                 }
             }
-            Console.WriteLine("Batch mode complete. Exiting.");
+            
+            // Run demo scenarios if requested
+            if (runScenarios)
+            {
+                await RunDemoScenarios();
+            }
+            
+            Console.WriteLine($"✅ Batch mode complete for {_environment} environment. Exiting.");
             return;
         }
 
@@ -298,9 +359,9 @@ class Program
         // You can replace these with your actual reset/migrate commands or scripts
         var resetCommands = new[]
         {
-            "cd ../../auth-service && dotnet ef database drop -f && dotnet ef database update",
-            "cd ../../user-service && dotnet ef database drop -f && dotnet ef database update",
-            "cd ../../matchmaking-service && dotnet ef database drop -f && dotnet ef database update",
+            "cd ../../AuthService && dotnet ef database drop -f && dotnet ef database update",
+            "cd ../../UserService && dotnet ef database drop -f && dotnet ef database update",
+            "cd ../../MatchmakingService && dotnet ef database drop -f && dotnet ef database update",
             "cd ../../swipe-service && dotnet ef database drop -f && dotnet ef database update"
         };
         foreach (var cmd in resetCommands)
@@ -617,13 +678,13 @@ class Program
                         {
                             var ok = await PostUserProfileAsync(token, registerDto.Username, "Test user bio", registerDto.ProfilePicture, "Testing, Automation");
                             if (ok)
-                                Console.WriteLine($"Seeded user profile for {registerDto.Email} in user-service.");
+                                Console.WriteLine($"Seeded user profile for {registerDto.Email} in UserService.");
                             else
-                                Console.WriteLine($"Failed to seed user profile for {registerDto.Email} in user-service.");
+                                Console.WriteLine($"Failed to seed user profile for {registerDto.Email} in UserService.");
                         }
                         else
                         {
-                            Console.WriteLine($"Failed to login for {registerDto.Email} to seed user-service profile.");
+                            Console.WriteLine($"Failed to login for {registerDto.Email} to seed UserService profile.");
                         }
                     }
                 }
@@ -694,7 +755,7 @@ class Program
             {
                 Console.WriteLine($"Exception while calling API for user {user.Email}: {ex.Message}");
             }
-            // Always try to seed user-service profile if requested
+            // Always try to seed UserService profile if requested
             if (seedUserService)
             {
                 var token = await LoginAndGetJwtAsync(user.Email, user.Password);
@@ -702,13 +763,13 @@ class Program
                 {
                     var ok = await PostUserProfileAsync(token, user.Username, "Test user bio", user.ProfilePicture, "Testing, Automation");
                     if (ok)
-                        Console.WriteLine($"Seeded user profile for {user.Email} in user-service.");
+                        Console.WriteLine($"Seeded user profile for {user.Email} in UserService.");
                     else
-                        Console.WriteLine($"Failed to seed user profile for {user.Email} in user-service.");
+                        Console.WriteLine($"Failed to seed user profile for {user.Email} in UserService.");
                 }
                 else
                 {
-                    Console.WriteLine($"Failed to login for {user.Email} to seed user-service profile.");
+                    Console.WriteLine($"Failed to login for {user.Email} to seed UserService profile.");
                 }
             }
         }
@@ -749,9 +810,150 @@ class Program
         authContext.SaveChanges();
     }
 
+    // --- Environment Configuration Methods ---
+    static async Task LoadEnvironmentConfig(string[] args)
+    {
+        try
+        {
+            string configPath = $"Configurations/{_environment}.json";
+            
+            if (File.Exists(configPath))
+            {
+                Console.WriteLine($"📋 Loading configuration for environment: {_environment}");
+                string json = await File.ReadAllTextAsync(configPath);
+                _config = JsonSerializer.Deserialize<EnvironmentConfig>(json, new JsonSerializerOptions 
+                { 
+                    PropertyNameCaseInsensitive = true 
+                });
+                
+                // Update connection strings with environment suffix
+                UpdateConnectionStringsForEnvironment();
+                
+                // Update API URLs from config
+                if (_config?.ApiEndpoints != null)
+                {
+                    AuthApiServiceUrl = _config.ApiEndpoints.ContainsKey("AuthService") 
+                        ? _config.ApiEndpoints["AuthService"] 
+                        : AuthApiServiceUrl;
+                    UserServiceApiUrl = _config.ApiEndpoints.ContainsKey("UserService") 
+                        ? _config.ApiEndpoints["UserService"] 
+                        : UserServiceApiUrl;
+                }
+                
+                Console.WriteLine($"✅ Configuration loaded for {_environment} environment");
+            }
+            else
+            {
+                Console.WriteLine($"⚠️  No configuration found for {_environment}, using defaults");
+                _config = new EnvironmentConfig { Environment = _environment };
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error loading configuration: {ex.Message}");
+            _config = new EnvironmentConfig { Environment = _environment };
+        }
+    }
+    
+    static void UpdateConnectionStringsForEnvironment()
+    {
+        if (_config?.DatabaseConnection != null)
+        {
+            // Use specific database connection from config
+            _connectionString = _config.DatabaseConnection;
+            DbOptions["1"] = _connectionString; // Update auth service connection
+        }
+        else if (_config?.DatabaseSuffix != null)
+        {
+            var updatedDbOptions = new Dictionary<string, string>();
+            foreach (var kvp in DbOptions)
+            {
+                string connectionString = kvp.Value;
+                // Update database names with environment suffix
+                connectionString = connectionString.Replace("Database=AuthServiceDb", $"Database=auth_service{_config.DatabaseSuffix}");
+                connectionString = connectionString.Replace("Database=UserServiceDb", $"Database=user_service{_config.DatabaseSuffix}");
+                connectionString = connectionString.Replace("Database=MatchmakingServiceDb", $"Database=matchmaking_service{_config.DatabaseSuffix}");
+                connectionString = connectionString.Replace("Database=SwipeServiceDb", $"Database=swipe_service{_config.DatabaseSuffix}");
+                updatedDbOptions[kvp.Key] = connectionString;
+            }
+            
+            // Update the DbOptions dictionary
+            DbOptions.Clear();
+            foreach (var kvp in updatedDbOptions)
+            {
+                DbOptions[kvp.Key] = kvp.Value;
+            }
+            
+            _connectionString = DbOptions[_selectedDb];
+        }
+    }
+    
+    static async Task RunDemoScenarios()
+    {
+        if (_environment != "demo")
+        {
+            Console.WriteLine("❌ Demo scenarios can only be run in demo environment");
+            return;
+        }
+        
+        Console.WriteLine("🎬 Running Demo Scenarios...");
+        
+        var scenarios = DemoProfile.GetDemoScenarios();
+        foreach (var scenario in scenarios)
+        {
+            Console.WriteLine($"\n🎭 Executing: {scenario.Description}");
+            foreach (var action in scenario.Actions)
+            {
+                Console.WriteLine($"   ▶️  {action}");
+                await Task.Delay(1000); // Simulate realistic timing
+            }
+        }
+        
+        Console.WriteLine("\n✅ All demo scenarios completed!");
+    }
+
     // --- STUBS for missing menu methods to fix build ---
     static void CreateSwipes() { Console.WriteLine("[STUB] CreateSwipes not implemented."); Console.ReadKey(); }
     static void CreateMutualMatches() { Console.WriteLine("[STUB] CreateMutualMatches not implemented."); Console.ReadKey(); }
     static void CreateMessages() { Console.WriteLine("[STUB] CreateMessages not implemented."); Console.ReadKey(); }
     static void SetDatabaseConnection() { Console.WriteLine("[STUB] SetDatabaseConnection not implemented."); Console.ReadKey(); }
+}
+
+// --- Environment Configuration Classes ---
+public class EnvironmentConfig
+{
+    public string Environment { get; set; } = "local";
+    public string DatabaseSuffix { get; set; } = "";
+    public string? DatabaseConnection { get; set; }
+    public DataProfile DataProfile { get; set; } = new();
+    public Dictionary<string, string> ApiEndpoints { get; set; } = new();
+    public Features Features { get; set; } = new();
+}
+
+public class DataProfile
+{
+    public int UserCount { get; set; } = 10;
+    public bool TestUsersOnly { get; set; } = false;
+    public bool SafetyMode { get; set; } = false;
+    public double MatchPercentage { get; set; } = 0.2;
+    public string MessageDensity { get; set; } = "medium";
+    public int PhotosPerUser { get; set; } = 3;
+    public string DataRetention { get; set; } = "indefinite";
+    public List<DemoScenarioConfig> DemoScenarios { get; set; } = new();
+}
+
+public class DemoScenarioConfig
+{
+    public string Name { get; set; } = "";
+    public string[] Users { get; set; } = Array.Empty<string>();
+    public string Script { get; set; } = "";
+}
+
+public class Features
+{
+    public bool ResetOnStartup { get; set; } = false;
+    public bool GeneratePhotos { get; set; } = false;
+    public bool CreateRealTimeMessages { get; set; } = false;
+    public bool EnableAnalytics { get; set; } = true;
+    public bool RequireAuthentication { get; set; } = false;
 }

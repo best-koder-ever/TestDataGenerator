@@ -1,0 +1,42 @@
+{
+  "Environment": "demo",
+  "DatabaseSuffix": "_demo",
+  "DatabaseConnection": "Server=127.0.0.1;Port=3320;Database=auth_service_demo;Uid=root;Pwd=demo_root_123;",
+  "DataProfile": {
+    "UserCount": 5,
+    "MatchPercentage": 0.3,
+    "MessageDensity": "high",
+    "PhotosPerUser": 5,
+    "DemoScenarios": [
+      {
+        "name": "perfect_match_journey",
+        "users": ["demo.alice@example.com", "demo.bob@example.com"],
+        "script": "mutual_like_immediate_match_conversation"
+      },
+      {
+        "name": "swipe_journey", 
+        "users": ["demo.charlie@example.com"],
+        "script": "swipe_through_10_profiles_with_3_matches"
+      },
+      {
+        "name": "conversation_journey",
+        "users": ["demo.diana@example.com", "demo.eve@example.com"],
+        "script": "matched_users_long_conversation"
+      }
+    ]
+  },
+  "ApiEndpoints": {
+    "AuthService": "http://localhost:5001",
+    "UserService": "http://localhost:5002", 
+    "MatchmakingService": "http://localhost:5003",
+    "SwipeService": "http://localhost:5004",
+    "PhotoService": "http://localhost:5005",
+    "MessagingService": "http://localhost:5006"
+  },
+  "Features": {
+    "ResetOnStartup": false,
+    "GeneratePhotos": true,
+    "CreateRealTimeMessages": true,
+    "EnableAnalytics": false
+  }
+}

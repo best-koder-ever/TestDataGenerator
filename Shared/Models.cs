@@ -1,9 +1,13 @@
 // Shared DTOs for TestDataGenerator - eliminates cross-project dependencies
+#if !CI_BUILD
+using AuthService.DTOs;
+using AuthService.Models;
+using UserService.Models;
+#endif
+
 namespace TestDataGenerator.Shared;
 
-#if CI_BUILD
-// CI Build - use local models instead of project references
-
+// Always available for demo profiles
 public class RegisterDto
 {
     public string Username { get; set; } = string.Empty;
@@ -13,6 +17,9 @@ public class RegisterDto
     public string? PhoneNumber { get; set; }
     public string? ProfilePicture { get; set; }
 }
+
+#if CI_BUILD
+// CI Build - additional models for when project references aren't available
 
 public class User
 {
@@ -59,9 +66,4 @@ public class UserProfile
     public bool IsVerified { get; set; }
 }
 
-#else
-// Local Build - use actual project references
-using AuthService.DTOs;
-using AuthService.Models;
-using UserService.Models;
 #endif

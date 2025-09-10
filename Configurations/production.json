@@ -1,0 +1,25 @@
+{
+  "Environment": "production",
+  "DatabaseSuffix": "_prod",
+  "DataProfile": {
+    "UserCount": 0,
+    "TestUsersOnly": true,
+    "SafetyMode": true,
+    "DataRetention": "7_days"
+  },
+  "ApiEndpoints": {
+    "AuthService": "https://api.datingapp.com/auth",
+    "UserService": "https://api.datingapp.com/user",
+    "MatchmakingService": "https://api.datingapp.com/matchmaking", 
+    "SwipeService": "https://api.datingapp.com/swipe",
+    "PhotoService": "https://api.datingapp.com/photo",
+    "MessagingService": "https://api.datingapp.com/messaging"
+  },
+  "Features": {
+    "ResetOnStartup": false,
+    "GeneratePhotos": false,
+    "CreateRealTimeMessages": false,
+    "EnableAnalytics": true,
+    "RequireAuthentication": true
+  }
+}

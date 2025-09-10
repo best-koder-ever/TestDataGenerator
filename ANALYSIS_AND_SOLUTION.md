@@ -6,11 +6,11 @@
 TestDataGenerator had **cross-project dependencies** that made it impossible to build in GitHub Actions isolation:
 
 ```xml
-<ProjectReference Include="..\auth-service\AuthService.csproj" />
-<ProjectReference Include="..\matchmaking-service\MatchmakingService.csproj" />
+<ProjectReference Include="..\AuthService\AuthService.csproj" />
+<ProjectReference Include="..\MatchmakingService\MatchmakingService.csproj" />
 <ProjectReference Include="..\dejting-yarp\src\dejting-yarp\dejting-yarp.csproj" />
 <ProjectReference Include="..\swipe-service\src\SwipeService\SwipeService.csproj" />
-<ProjectReference Include="..\user-service\src\UserService\UserService.csproj" />
+<ProjectReference Include="..\UserService\src\UserService\UserService.csproj" />
 ```
 
 ### **Issues:**
@@ -35,7 +35,7 @@ TestDataGenerator had **cross-project dependencies** that made it impossible to 
 
 <!-- Project references only for local builds -->
 <ItemGroup Condition="'$(CI_BUILD)' != 'true'">
-  <ProjectReference Include="..\auth-service\AuthService.csproj" />
+  <ProjectReference Include="..\AuthService\AuthService.csproj" />
   <!-- ... other references ... -->
 </ItemGroup>
 ```
@@ -106,8 +106,8 @@ return;
 ### **Expected Outcome:**
 - ✅ **TestDataGenerator**: SUCCESS (hybrid solution)
 - ✅ **UserService**: SUCCESS (previously fixed - flat structure)
-- ✅ **auth-service**: SUCCESS (already working)
-- ✅ **matchmaking-service**: SUCCESS (already working)
+- ✅ **AuthService**: SUCCESS (already working)
+- ✅ **MatchmakingService**: SUCCESS (already working)
 - ✅ **photo-service**: SUCCESS (already working)
 - ✅ **swipe-service**: SUCCESS (already working)
 - ✅ **dejting-yarp**: SUCCESS (already working)

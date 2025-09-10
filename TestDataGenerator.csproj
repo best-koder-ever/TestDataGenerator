@@ -27,16 +27,16 @@
     </PackageReference>
     <PackageReference Include="Spectre.Console" Version="0.50.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
-    <PackageReference Include="MySqlConnector" Version="2.2.5" />
+    <PackageReference Include="MySqlConnector" Version="2.3.5" />
   </ItemGroup>
 
   <!-- Project references only for local builds -->
   <ItemGroup Condition="'$(CI_BUILD)' != 'true'">
-    <ProjectReference Include="..\auth-service\AuthService.csproj" />
-    <ProjectReference Include="..\matchmaking-service\MatchmakingService.csproj" />
+    <ProjectReference Include="..\AuthService\AuthService.csproj" />
+    <ProjectReference Include="..\MatchmakingService\MatchmakingService.csproj" />
     <ProjectReference Include="..\dejting-yarp\src\dejting-yarp\dejting-yarp.csproj" />
     <ProjectReference Include="..\swipe-service\src\SwipeService\SwipeService.csproj" />
-    <ProjectReference Include="..\user-service\UserService.csproj" />
+    <ProjectReference Include="..\UserService\UserService.csproj" />
   </ItemGroup>
 
   <ItemGroup>
