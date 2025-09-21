@@ -26,12 +26,12 @@
     ]
   },
   "ApiEndpoints": {
-    "AuthService": "http://localhost:5001",
-    "UserService": "http://localhost:5002", 
-    "MatchmakingService": "http://localhost:5003",
-    "SwipeService": "http://localhost:5004",
-    "PhotoService": "http://localhost:5005",
-    "MessagingService": "http://localhost:5006"
+    "AuthService": "http://localhost:8081",
+    "UserService": "http://localhost:8082", 
+    "MatchmakingService": "http://localhost:8083",
+    "SwipeService": "http://localhost:8086",
+    "PhotoService": "http://localhost:8084",
+    "MessagingService": "http://localhost:8085"
   },
   "Features": {
     "ResetOnStartup": false,
